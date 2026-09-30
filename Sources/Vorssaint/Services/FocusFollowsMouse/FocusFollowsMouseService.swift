@@ -69,6 +69,12 @@ final class FocusFollowsMouseService {
                                                       object: nil, queue: .main) { [weak self] _ in
             self?.resetMovement()
         })
+        observers.append(workspaceCenter.addObserver(forName: NSWorkspace.didActivateApplicationNotification,
+                                                      object: nil, queue: .main) { [weak self] notification in
+            guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey]
+                    as? NSRunningApplication else { return }
+            self?.applicationDidActivate(app.processIdentifier)
+        })
         observers.append(workspaceCenter.addObserver(forName: NSWorkspace.didWakeNotification,
                                                       object: nil, queue: .main) { [weak self] _ in
             self?.resetMovement()
@@ -99,6 +105,18 @@ final class FocusFollowsMouseService {
         state.reset()
         timer?.invalidate()
         timer = nil
+    }
+
+    private func applicationDidActivate(_ processID: pid_t) {
+        // The activator may pass through Vorssaint on its way to the target.
+        if processID == ProcessInfo.processInfo.processIdentifier, ActivationHandoff.isHandingOff {
+            return
+        }
+        state.applicationDidActivate(processID: processID, at: ProcessInfo.processInfo.systemUptime)
+        if !state.hasPendingEvaluation {
+            timer?.invalidate()
+            timer = nil
+        }
     }
 
     /// Nothing held down: no mouse button pressed and no modifier. Asked
@@ -159,6 +177,8 @@ final class FocusFollowsMouseService {
                       // travels between desktops.
                       !SpaceWindowBridge.isParkedOnHiddenSpace(target.windowID)
                 else { return }
+                self.state.hoverWillActivate(processID: target.processID,
+                                             at: ProcessInfo.processInfo.systemUptime)
                 WindowActivator.activate(pid: target.processID,
                                          windowID: target.windowID,
                                          appName: app.localizedName ?? "",
