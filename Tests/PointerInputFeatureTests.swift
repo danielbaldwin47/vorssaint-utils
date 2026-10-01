@@ -1036,6 +1036,12 @@ enum PointerInputFeatureTests {
         focusFollowsMouseState.applicationDidActivate(processID: 2_002, at: 31.05)
         suite.expect(!focusFollowsMouseState.hasPendingEvaluation,
                "another app coming forward while hover's activation is in flight still discards old movement")
+        focusFollowsMouseState.hoverWillActivate(processID: 1_001, at: 32)
+        focusFollowsMouseState.reset()
+        focusFollowsMouseState.recordMovement(to: CGPoint(x: 190, y: 20), at: 32.1)
+        focusFollowsMouseState.applicationDidActivate(processID: 1_001, at: 32.2)
+        suite.expect(!focusFollowsMouseState.hasPendingEvaluation,
+               "a hover activation requested before a reset does not excuse a switch made after it")
         suite.expect(Defaults.registeredDefaults[DefaultsKey.focusFollowsMouseEnabled] as? Bool == false
                 && Defaults.registeredDefaults[DefaultsKey.focusFollowsMouseDelay] as? Int
                     == FocusFollowsMouseSupport.defaultDelayMilliseconds,

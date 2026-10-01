@@ -90,6 +90,7 @@ struct FocusFollowsMouseState: Equatable {
         point = nil
         generation &+= 1
         evaluatedGeneration = nil
+        hoverActivatedProcessID = nil
     }
 
     mutating func nextEvaluation(at time: TimeInterval,
