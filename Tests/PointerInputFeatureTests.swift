@@ -1065,6 +1065,14 @@ enum PointerInputFeatureTests {
         suite.expect(focusFollowsMouseServiceSource.contains(
                 "!SpaceWindowBridge.isParkedOnHiddenSpace(target.windowID)"),
                "focus follows mouse never hands a window on a hidden Space to the activator, which would travel")
+        // A token is removed only by the center that issued it. One left
+        // behind keeps answering app switches, and twice once hover restarts.
+        suite.expect(focusFollowsMouseServiceSource.components(separatedBy: "workspaceCenter.addObserver(").count
+                == focusFollowsMouseServiceSource.components(
+                    separatedBy: "workspaceObservers.append(workspaceCenter.addObserver(").count
+                && focusFollowsMouseServiceSource.contains(
+                    "workspaceObservers.forEach(NSWorkspace.shared.notificationCenter.removeObserver)"),
+               "focus follows mouse removes its workspace observers from the workspace notification center")
 
         // A wheel that reports continuously already measures in points, and
         // that field is the one to trust; the line field only fills in for a

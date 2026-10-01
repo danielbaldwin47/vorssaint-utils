@@ -12,6 +12,7 @@ final class FocusFollowsMouseService {
     private var timer: Timer?
     private var mouseMonitor: Any?
     private var observers: [NSObjectProtocol] = []
+    private var workspaceObservers: [NSObjectProtocol] = []
     private var state = FocusFollowsMouseState()
     private var delayMilliseconds = FocusFollowsMouseSupport.defaultDelayMilliseconds
     private var isRunning = false
@@ -46,6 +47,8 @@ final class FocusFollowsMouseService {
         mouseMonitor = nil
         observers.forEach(NotificationCenter.default.removeObserver)
         observers.removeAll()
+        workspaceObservers.forEach(NSWorkspace.shared.notificationCenter.removeObserver)
+        workspaceObservers.removeAll()
         isRunning = false
     }
 
@@ -65,18 +68,18 @@ final class FocusFollowsMouseService {
         self.mouseMonitor = mouseMonitor
 
         let workspaceCenter = NSWorkspace.shared.notificationCenter
-        observers.append(workspaceCenter.addObserver(forName: NSWorkspace.activeSpaceDidChangeNotification,
-                                                      object: nil, queue: .main) { [weak self] _ in
+        workspaceObservers.append(workspaceCenter.addObserver(forName: NSWorkspace.activeSpaceDidChangeNotification,
+                                                              object: nil, queue: .main) { [weak self] _ in
             self?.resetMovement()
         })
-        observers.append(workspaceCenter.addObserver(forName: NSWorkspace.didActivateApplicationNotification,
-                                                      object: nil, queue: .main) { [weak self] notification in
+        workspaceObservers.append(workspaceCenter.addObserver(forName: NSWorkspace.didActivateApplicationNotification,
+                                                              object: nil, queue: .main) { [weak self] notification in
             guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey]
                     as? NSRunningApplication else { return }
             self?.applicationDidActivate(app.processIdentifier)
         })
-        observers.append(workspaceCenter.addObserver(forName: NSWorkspace.didWakeNotification,
-                                                      object: nil, queue: .main) { [weak self] _ in
+        workspaceObservers.append(workspaceCenter.addObserver(forName: NSWorkspace.didWakeNotification,
+                                                              object: nil, queue: .main) { [weak self] _ in
             self?.resetMovement()
         })
         observers.append(NotificationCenter.default.addObserver(
